@@ -55,7 +55,7 @@ func generator(images []string) {
 		log.Fatalf("Failed to create: %s", err)
 	}
 
-	jpeg.Encode(result, newImage, &jpeg.Options{jpeg.DefaultQuality})
+	jpeg.Encode(result, newImage, &jpeg.Options{Quality: jpeg.DefaultQuality})
 	defer result.Close()
 	log.Info("File created at ./final/result.jpg")
 }
