@@ -6,6 +6,7 @@ import (
 	"image/jpeg"
 	"image/png"
 	"os"
+	"path/filepath"
 
 	log "github.com/sirupsen/logrus"
 )
@@ -16,16 +17,30 @@ func main() {
 		FullTimestamp: true,
 	})
 
-	log.Println("Hello")
-	generator()
+	layers, err := readLayers("./layers")
+	if err != nil {
+		log.Error(err)
+		return
+	}
+	generator(layers)
 }
 
-func generator() {
-	var images = []string{"bg_0", "edge_0", "edge_1", "edge_2", "a_0", "b_0", "c_0", "d_0", "e_0", "f_0", "g_0", "h_0", "i_0"}
+func readLayers(dir string) ([]string, error) {
+	layers := []string{}
+	err := filepath.Walk(dir, func(path string, f os.FileInfo, err error) error {
+		if !f.IsDir() {
+			layers = append(layers, path)
+		}
+		return nil
+	})
+	return layers, err
+}
+
+func generator(images []string) {
 	var decodedImages = make([]image.Image, len(images))
 
 	for i, img := range images {
-		decodedImages[i] = openAndDecode("./layers/" + img + ".PNG")
+		decodedImages[i] = openAndDecode(img)
 	}
 
 	bounds := decodedImages[0].Bounds()
@@ -42,6 +57,7 @@ func generator() {
 
 	jpeg.Encode(result, newImage, &jpeg.Options{jpeg.DefaultQuality})
 	defer result.Close()
+	log.Info("File created at ./final/result.jpg")
 }
 
 func openAndDecode(imgPath string) image.Image {
