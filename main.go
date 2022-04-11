@@ -16,7 +16,10 @@ import (
 
 func main() {
 	var n int
+	var g bool
 	flag.IntVar(&n, "n", 0, "Number to start from")
+	flag.BoolVar(&g, "g", true, "Should generate or not")
+
 	flag.Parse()
 	log.SetFormatter(&log.TextFormatter{
 		DisableColors: true,
@@ -28,11 +31,10 @@ func main() {
 		log.Error(err)
 		return
 	}
-	composer(multiLayers, n)
-	// generator(layers)
+	composer(multiLayers, n*1024, g)
 }
 
-func composer(m [][]string, n int) {
+func composer(m [][]string, n int, g bool) {
 	counter := 0
 	imageCounter := 0
 	start := time.Now()
@@ -49,12 +51,18 @@ func composer(m [][]string, n int) {
 											for _, lg := range m[10] {
 												for _, lh := range m[11] {
 													for _, li := range m[12] {
-														_ = []string{l0, l1, l2, l3, la, lb, lc, ld, le, lf, lg, lh, li}
-														if counter > n && counter < (n+1025) {
-															generator([]string{l0, l1, l2, l3, la, lb, lc, ld, le, lf, lg, lh, li}, strconv.Itoa(counter)+".PNG")
-															imageCounter = imageCounter + 1
+														for _, lj := range m[13] {
+															for _, lk := range m[14] {
+																_ = []string{l0, l1, l2, l3, la, lb, lc, ld, le, lf, lg, lh, li, lj, lk}
+																if counter >= n && counter < (n+1025) {
+																	if g {
+																		generator([]string{l0, l1, l2, l3, la, lb, lc, ld, le, lf, lg, lh, li, lj, lk}, strconv.Itoa(counter)+".PNG")
+																	}
+																	imageCounter = imageCounter + 1
+																}
+																counter = counter + 1
+															}
 														}
-														counter = counter + 1
 													}
 												}
 											}
@@ -69,8 +77,9 @@ func composer(m [][]string, n int) {
 		}
 	}
 	duration := time.Since(start)
-	log.Println("Images Created:", imageCounter)
+	log.Println("Images Created: ", imageCounter)
 	log.Println("Total Duration: ", duration)
+	log.Println("Total possibilities: ", counter)
 }
 
 func readLayers(dir string) ([][]string, error) {
