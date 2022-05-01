@@ -157,7 +157,7 @@ func generator(images []string, output string) {
 
 	jpeg.Encode(result, newImage, &jpeg.Options{Quality: jpeg.DefaultQuality})
 	defer result.Close()
-	log.Info("%s", output)
+	log.Info(output)
 }
 
 func openAndDecode(imgPath string) image.Image {
@@ -197,6 +197,16 @@ func readLayers(dir string) ([][]string, error) {
 		return nil
 	})
 	multiLayers = append(multiLayers, layers)
+
+	for _, v := range multiLayers {
+		for _, l := range v {
+			err := validateLayer(strings.Split(l, "/")[1])
+			if err != nil {
+				return nil, err
+			}
+		}
+	}
+
 	return multiLayers, err
 }
 
@@ -207,5 +217,13 @@ func finalDir(f string) error {
 			return err
 		}
 	}
+	return nil
+}
+
+func validateLayer(l string) error {
+	if len(strings.Split(l, "_")) < 2 || !strings.HasPrefix(l, "layer") {
+		return errors.New("Layer is not named as per specifications: " + l)
+	}
+
 	return nil
 }
