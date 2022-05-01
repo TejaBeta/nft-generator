@@ -15,6 +15,7 @@ package internal
 import (
 	"crypto/sha1"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"image"
 	"image/draw"
@@ -48,6 +49,11 @@ type Property struct {
 var metaData []Metadata
 
 func NFTGenerator(n int, l string, f string) {
+	err := finalDir(f)
+	if err != nil {
+		log.Error(err)
+		return
+	}
 	m, err := readLayers(l)
 	if err != nil {
 		log.Error(err)
@@ -150,7 +156,7 @@ func generator(images []string, output string) {
 
 	jpeg.Encode(result, newImage, &jpeg.Options{Quality: jpeg.DefaultQuality})
 	defer result.Close()
-	log.Printf("%s", output)
+	log.Info("%s", output)
 }
 
 func openAndDecode(imgPath string) image.Image {
@@ -186,4 +192,14 @@ func readLayers(dir string) ([][]string, error) {
 	})
 	multiLayers = append(multiLayers, layers)
 	return multiLayers, err
+}
+
+func finalDir(f string) error {
+	if _, err := os.Stat(f); errors.Is(err, os.ErrNotExist) {
+		err := os.Mkdir(f, os.ModePerm)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
 }
