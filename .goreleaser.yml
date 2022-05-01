@@ -1,0 +1,23 @@
+# .goreleaser.yml
+# Build customization
+builds:
+  - main: ./main.go
+    binary: nft-generator
+    ldflags: -s -w -X github.com/TejaBeta/nft-generator/cmd.version={{.Version}} -X github.com/TejaBeta/nft-generator/cmd.commit={{.Commit}}
+    goos:
+      - windows
+      - darwin
+      - linux
+    goarch:
+      - amd64
+      - arm64
+    env:
+      - CGO_ENABLED=0
+archives:
+  - id: nft-generator
+    name_template: "{{ .ProjectName }}_{{ .Tag }}_{{ .Os }}_{{ .Arch }}{{ if .Arm }}v{{ .Arm }}{{ end }}"
+    format: tar.gz
+    replacements:
+      amd64: x86_64
+      darwin: Darwin
+      linux: Linux
