@@ -53,6 +53,6 @@ func init() {
 	})
 	rootCmd.Flags().BoolVar(&flagVerbose, "verbose", false, "Verbose mode on")
 	rootCmd.Flags().IntVar(&flagN, "n", 1024, "Number of images to create")
-	rootCmd.Flags().StringVar(&flagLayers, "layers", "./layers", "Layers directory location")
-	rootCmd.Flags().StringVar(&flagFinal, "final", "./final", "Final directory location")
+	rootCmd.Flags().StringVar(&flagLayers, "layers", "layers", "Layers directory location")
+	rootCmd.Flags().StringVar(&flagFinal, "final", "final", "Final directory location")
 }
