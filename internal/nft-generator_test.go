@@ -128,12 +128,12 @@ func TestGenerator_A001(t *testing.T) {
 		t.Errorf("Error at creating final directory")
 	}
 
-	err = generator(g, "../testdata/final/test.PNG")
+	err = generator(g, "../testdata/final/test.png")
 	if err != nil {
 		t.Errorf("Error at Generator Function")
 	}
 
-	if _, err := os.Stat("../testdata/final/test.PNG"); errors.Is(err, os.ErrNotExist) {
+	if _, err := os.Stat("../testdata/final/test.png"); errors.Is(err, os.ErrNotExist) {
 		t.Errorf("Error at Generator Function unable to create a final file")
 	} else {
 		os.RemoveAll("../testdata/final")

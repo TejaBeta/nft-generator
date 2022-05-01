@@ -72,13 +72,13 @@ func NFTGenerator(n int, l string, f string) {
 		for k, v := range h {
 			g[k] = m[k][v]
 		}
-		err = generator(g, f+"/"+strconv.Itoa(i)+".PNG")
+		err = generator(g, f+"/"+strconv.Itoa(i)+".png")
 		if err != nil {
 			return
 		}
 		meta := metaGenerator(m, h)
 		meta.Id = i
-		meta.Name = strconv.Itoa(i) + ".PNG"
+		meta.Name = strconv.Itoa(i) + ".png"
 		metaData = append(metaData, meta)
 	}
 
