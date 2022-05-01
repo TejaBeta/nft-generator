@@ -6,19 +6,20 @@ import (
 	"image/draw"
 	"image/jpeg"
 	"image/png"
+	"math/rand"
 	"os"
 	"path/filepath"
 	"strconv"
-	"time"
 
 	log "github.com/sirupsen/logrus"
 )
 
 func main() {
 	var n int
-	var g bool
+	var l, f string
 	flag.IntVar(&n, "n", 0, "Number to start from")
-	flag.BoolVar(&g, "g", true, "Should generate or not")
+	flag.StringVar(&l, "layers", "./layers", "Layers location")
+	flag.StringVar(&f, "final", "./final", "Final location")
 
 	flag.Parse()
 	log.SetFormatter(&log.TextFormatter{
@@ -26,60 +27,23 @@ func main() {
 		FullTimestamp: false,
 	})
 
-	multiLayers, err := readLayers("./layers")
+	multiLayers, err := readLayers(l)
 	if err != nil {
 		log.Error(err)
 		return
 	}
-	composer(multiLayers, n*1024, g)
+	compose(multiLayers, n, f)
 }
 
-func composer(m [][]string, n int, g bool) {
-	counter := 0
-	imageCounter := 0
-	start := time.Now()
-	for _, l0 := range m[0] {
-		for _, l1 := range m[1] {
-			for _, l2 := range m[2] {
-				for _, l3 := range m[3] {
-					for _, la := range m[4] {
-						for _, lb := range m[5] {
-							for _, lc := range m[6] {
-								for _, ld := range m[7] {
-									for _, le := range m[8] {
-										for _, lf := range m[9] {
-											for _, lg := range m[10] {
-												for _, lh := range m[11] {
-													for _, li := range m[12] {
-														for _, lj := range m[13] {
-															for _, lk := range m[14] {
-																_ = []string{l0, l1, l2, l3, la, lb, lc, ld, le, lf, lg, lh, li, lj, lk}
-																if counter >= n && counter < (n+1025) {
-																	if g {
-																		generator([]string{l0, l1, l2, l3, la, lb, lc, ld, le, lf, lg, lh, li, lj, lk}, strconv.Itoa(counter)+".PNG")
-																	}
-																	imageCounter = imageCounter + 1
-																}
-																counter = counter + 1
-															}
-														}
-													}
-												}
-											}
-										}
-									}
-								}
-							}
-						}
-					}
-				}
-			}
+func compose(m [][]string, n int, final string) {
+	g, h := make([]string, len(m)), make([]int, len(m))
+	for i := 0; i < n; i++ {
+		for k, v := range m {
+			r := rand.Intn(len(v))
+			h[k], g[k] = r, v[r]
 		}
+		generator(g, final+"/"+strconv.Itoa(i+1)+".PNG")
 	}
-	duration := time.Since(start)
-	log.Println("Images Created: ", imageCounter)
-	log.Println("Total Duration: ", duration)
-	log.Println("Total possibilities: ", counter)
 }
 
 func readLayers(dir string) ([][]string, error) {
@@ -116,7 +80,7 @@ func generator(images []string, output string) {
 		draw.Draw(newImage, img.Bounds(), img, image.ZP, draw.Over)
 	}
 
-	result, err := os.Create("./final/" + output)
+	result, err := os.Create(output)
 	if err != nil {
 		log.Fatalf("Failed to create: %s", err)
 	}
