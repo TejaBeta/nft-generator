@@ -1,32 +1,35 @@
 package main
 
 import (
+	"encoding/json"
 	"flag"
 	"image"
 	"image/draw"
 	"image/jpeg"
 	"image/png"
+	"io/ioutil"
 	"math/rand"
 	"os"
 	"path/filepath"
 	"strconv"
+	"strings"
 	"time"
 
 	log "github.com/sirupsen/logrus"
 )
 
 type Metadata struct {
-	Id         int        `json:"ID"`
-	Name       string     `json:"Name"`
-	Hash       string     `json:"Hash"`
-	Date       time.Time  `json:"Date"`
-	Properties []Property `json:"Properties"`
+	Id         int        `json:"id"`
+	Name       string     `json:"name"`
+	Hash       string     `json:"hash"`
+	Date       time.Time  `json:"date"`
+	Properties []Property `json:"properties"`
 }
 
 type Property struct {
-	Id    int    `json:"ID"`
-	Layer string `json:"Layer"`
-	Name  string `json:"Name"`
+	Id    int    `json:"id"`
+	Layer string `json:"layer"`
+	Name  string `json:"name"`
 }
 
 func main() {
@@ -51,14 +54,41 @@ func main() {
 }
 
 func compose(m [][]string, n int, final string) {
-	g, h := make([]string, len(m)), make([]int, len(m))
+	rand.Seed(time.Now().UnixNano())
+	metadata := []Metadata{}
+	g, h := make([]string, len(m)), make([]string, len(m))
 	for i := 0; i < n; i++ {
+		properties := []Property{}
+	loop:
 		for k, v := range m {
 			r := rand.Intn(len(v))
-			h[k], g[k] = r, v[r]
+			h[k], g[k] = strconv.Itoa(r), v[r]
+			property := Property{r, strings.Split(strings.Split(v[r], "/")[1], "_")[1], strings.Split(strings.Split(v[r], "/")[2], ".")[0]}
+			properties = append(properties, property)
 		}
+		if isHashExists(metadata, strings.Join(h, "")) {
+			properties = properties[:len(properties)-1]
+			goto loop
+		}
+		meta := Metadata{i, strconv.Itoa(i+1) + ".PNG", strings.Join(h, ""), time.Now(), properties}
+		metadata = append(metadata, meta)
 		generator(g, final+"/"+strconv.Itoa(i+1)+".PNG")
 	}
+
+	file, _ := json.MarshalIndent(metadata, "", " ")
+
+	_ = ioutil.WriteFile(final+"/metadata.json", file, 0644)
+}
+
+func isHashExists(metadata []Metadata, hash string) bool {
+	if len(metadata) > 0 {
+		for _, v := range metadata {
+			if hash == v.Hash {
+				return true
+			}
+		}
+	}
+	return false
 }
 
 func readLayers(dir string) ([][]string, error) {
