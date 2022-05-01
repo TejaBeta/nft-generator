@@ -54,6 +54,7 @@ func NFTGenerator(n int, l string, f string) {
 		log.Error(err)
 		return
 	}
+
 	m, err := readLayers(l)
 	if err != nil {
 		log.Error(err)
@@ -177,6 +178,11 @@ func openAndDecode(imgPath string) image.Image {
 func readLayers(dir string) ([][]string, error) {
 	layers := []string{}
 	multiLayers := [][]string{}
+
+	if _, err := os.Stat(dir); errors.Is(err, os.ErrNotExist) {
+		return nil, err
+	}
+
 	err := filepath.Walk(dir, func(path string, f os.FileInfo, err error) error {
 		if f.Name() != ".DS_Store" && f.Name() != strings.Split(dir, "/")[len(strings.Split(dir, "/"))-1] {
 			if !f.IsDir() {
