@@ -14,7 +14,7 @@ package internal
 
 import "testing"
 
-func StringEncoder_A001(t *testing.T) {
+func TestStringEncoder_A001(t *testing.T) {
 	s := stringEncoder([]int{1, 2, 3, 4, 5})
 
 	if s != "8cb2237d0679ca88db6464eac60da96345513964" {
@@ -22,21 +22,21 @@ func StringEncoder_A001(t *testing.T) {
 	}
 }
 
-func ValidateLayer_A001(t *testing.T) {
+func TestValidateLayer_A001(t *testing.T) {
 	err := validateLayer("layera_something")
 	if err != nil {
 		t.Errorf("Error while validating layer")
 	}
 }
 
-func ValidateLayer_A002(t *testing.T) {
+func TestValidateLayer_A002(t *testing.T) {
 	err := validateLayer("a_something")
 	if err == nil {
 		t.Errorf("Error while validating layer")
 	}
 }
 
-func ValidateLayer_A003(t *testing.T) {
+func TestValidateLayer_A003(t *testing.T) {
 	err := validateLayer("layersomething")
 	if err == nil {
 		t.Errorf("Error while validating layer")
