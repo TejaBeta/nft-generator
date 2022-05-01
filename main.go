@@ -10,9 +10,24 @@ import (
 	"os"
 	"path/filepath"
 	"strconv"
+	"time"
 
 	log "github.com/sirupsen/logrus"
 )
+
+type Metadata struct {
+	Id         int        `json:"ID"`
+	Name       string     `json:"Name"`
+	Hash       string     `json:"Hash"`
+	Date       time.Time  `json:"Date"`
+	Properties []Property `json:"Properties"`
+}
+
+type Property struct {
+	Id    int    `json:"ID"`
+	Layer string `json:"Layer"`
+	Name  string `json:"Name"`
+}
 
 func main() {
 	var n int
