@@ -13,7 +13,10 @@ limitations under the License.
 package internal
 
 import (
+	"crypto/sha1"
 	"encoding/json"
+	"errors"
+	"fmt"
 	"image"
 	"image/draw"
 	"image/jpeg"
@@ -43,40 +46,98 @@ type Property struct {
 	Name  string `json:"name"`
 }
 
+var metaData []Metadata
+
 func NFTGenerator(n int, l string, f string) {
-	multiLayers, err := readLayers(l)
+	err := finalDir(f)
 	if err != nil {
 		log.Error(err)
 		return
 	}
-	compose(multiLayers, n, f)
-}
 
-func compose(m [][]string, n int, final string) {
-	rand.Seed(time.Now().UnixNano())
-	metadata := []Metadata{}
-	g, h := make([]string, len(m)), make([]string, len(m))
-	for i := 0; i < n; i++ {
-		properties := []Property{}
-	loop:
-		for k, v := range m {
-			r := rand.Intn(len(v))
-			h[k], g[k] = strconv.Itoa(r), v[r]
-			property := Property{r, strings.Split(strings.Split(v[r], "/")[1], "_")[1], strings.Split(strings.Split(v[r], "/")[2], ".")[0]}
-			properties = append(properties, property)
-		}
-		if isHashExists(metadata, strings.Join(h, "")) {
-			properties = properties[:len(properties)-1]
-			goto loop
-		}
-		meta := Metadata{i, strconv.Itoa(i+1) + ".PNG", strings.Join(h, ""), time.Now(), properties}
-		metadata = append(metadata, meta)
-		generator(g, final+"/"+strconv.Itoa(i+1)+".PNG")
+	m, err := readLayers(l)
+	if err != nil {
+		log.Error(err)
+		return
 	}
 
-	file, _ := json.MarshalIndent(metadata, "", " ")
+	for i := 0; i <= n; i++ {
+		h, err := compose(m)
+		if err != nil {
+			log.Error(err)
+			createMetaFile(metaData, f+"/metadata.json")
+			return
+		}
+		g := make([]string, len(m))
+		for k, v := range h {
+			g[k] = m[k][v]
+		}
+		err = generator(g, f+"/"+strconv.Itoa(i)+".PNG")
+		if err != nil {
+			return
+		}
+		meta := metaGenerator(m, h)
+		meta.Id = i
+		meta.Name = strconv.Itoa(i) + ".PNG"
+		metaData = append(metaData, meta)
+	}
 
-	_ = ioutil.WriteFile(final+"/metadata.json", file, 0644)
+	createMetaFile(metaData, f+"/metadata.json")
+}
+
+func metaGenerator(m [][]string, h []int) Metadata {
+	properties := []Property{}
+	for k, v := range h {
+		properties = append(properties, Property{v, strings.Split(strings.Split(m[k][v], "/")[len(strings.Split(m[k][v], "/"))-2], "_")[1], strings.Split(strings.Split(m[k][v], "/")[len(strings.Split(m[k][v], "/"))-1], ".")[0]})
+	}
+
+	return Metadata{Hash: stringEncoder(h), Date: time.Now(), Properties: properties}
+}
+
+func stringEncoder(s []int) string {
+	f := make([]string, len(s))
+	for k, v := range s {
+		f[k] = strconv.Itoa(v)
+	}
+
+	return fmt.Sprintf("%x", sha1.Sum([]byte(strings.Join(f, ""))))
+}
+
+func compose(m [][]string) ([]int, error) {
+	r := 0
+	h := make([]int, len(m))
+	rand.Seed(time.Now().UnixNano())
+
+loop:
+	for k, v := range m {
+		h[k] = rand.Intn(len(v))
+	}
+
+	if r > 1000 {
+		return nil, errors.New("Cannot create any more combinations!!!")
+	}
+
+	if isHashExists(metaData, stringEncoder(h)) {
+		r = r + 1
+		goto loop
+	}
+
+	return h, nil
+}
+
+func createMetaFile(metadata []Metadata, fileName string) error {
+	file, err := json.MarshalIndent(metadata, "", " ")
+	if err != nil {
+		return err
+	}
+
+	err = ioutil.WriteFile(fileName, file, 0644)
+	if err != nil {
+		return err
+	}
+
+	log.Info("Created metadata file at ", fileName)
+	return nil
 }
 
 func isHashExists(metadata []Metadata, hash string) bool {
@@ -90,7 +151,7 @@ func isHashExists(metadata []Metadata, hash string) bool {
 	return false
 }
 
-func generator(images []string, output string) {
+func generator(images []string, output string) error {
 	var decodedImages = make([]image.Image, len(images))
 
 	for i, img := range images {
@@ -107,11 +168,14 @@ func generator(images []string, output string) {
 	result, err := os.Create(output)
 	if err != nil {
 		log.Fatalf("Failed to create: %s", err)
+		return err
 	}
 
 	jpeg.Encode(result, newImage, &jpeg.Options{Quality: jpeg.DefaultQuality})
 	defer result.Close()
-	log.Printf("%s", output)
+	log.Info("File created: ", output)
+
+	return nil
 }
 
 func openAndDecode(imgPath string) image.Image {
@@ -132,8 +196,13 @@ func openAndDecode(imgPath string) image.Image {
 func readLayers(dir string) ([][]string, error) {
 	layers := []string{}
 	multiLayers := [][]string{}
+
+	if _, err := os.Stat(dir); errors.Is(err, os.ErrNotExist) {
+		return nil, err
+	}
+
 	err := filepath.Walk(dir, func(path string, f os.FileInfo, err error) error {
-		if f.Name() != ".DS_Store" && f.Name() != "layers" {
+		if f.Name() != ".DS_Store" && f.Name() != dir {
 			if !f.IsDir() {
 				layers = append(layers, path)
 			} else {
@@ -146,5 +215,33 @@ func readLayers(dir string) ([][]string, error) {
 		return nil
 	})
 	multiLayers = append(multiLayers, layers)
+
+	for _, v := range multiLayers {
+		for _, l := range v {
+			err := validateLayer(strings.Split(l, "/")[len(strings.Split(l, "/"))-2])
+			if err != nil {
+				return nil, err
+			}
+		}
+	}
+
 	return multiLayers, err
+}
+
+func finalDir(f string) error {
+	if _, err := os.Stat(f); errors.Is(err, os.ErrNotExist) {
+		err := os.Mkdir(f, os.ModePerm)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func validateLayer(l string) error {
+	if len(strings.Split(l, "_")) < 2 || !strings.HasPrefix(l, "layer") {
+		return errors.New("Layer is not named as per specifications: " + l)
+	}
+
+	return nil
 }
