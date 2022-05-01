@@ -62,7 +62,12 @@ func NFTGenerator(n int, l string, f string) {
 	}
 
 	for i := 0; i <= n; i++ {
-		h := compose(m)
+		h, err := compose(m)
+		if err != nil {
+			log.Error(err)
+			createMetaFile(metaData, f+"/metadata.json")
+			return
+		}
 		g := make([]string, len(m))
 		for k, v := range h {
 			g[k] = m[k][v]
@@ -95,19 +100,26 @@ func stringEncoder(s []int) string {
 	return fmt.Sprintf("%x", sha1.Sum([]byte(strings.Join(f, ""))))
 }
 
-func compose(m [][]string) []int {
+func compose(m [][]string) ([]int, error) {
+	r := 0
 	h := make([]int, len(m))
 	rand.Seed(time.Now().UnixNano())
 
+loop:
 	for k, v := range m {
 		h[k] = rand.Intn(len(v))
 	}
 
-	if isHashExists(metaData, stringEncoder(h)) {
-		compose(m)
+	if r > 1000 {
+		return nil, errors.New("Cannot create any more combinations!!!")
 	}
 
-	return h
+	if isHashExists(metaData, stringEncoder(h)) {
+		r = r + 1
+		goto loop
+	}
+
+	return h, nil
 }
 
 func createMetaFile(metadata []Metadata, fileName string) error {
@@ -157,7 +169,7 @@ func generator(images []string, output string) {
 
 	jpeg.Encode(result, newImage, &jpeg.Options{Quality: jpeg.DefaultQuality})
 	defer result.Close()
-	log.Info(output)
+	log.Info("File created: ", output)
 }
 
 func openAndDecode(imgPath string) image.Image {
