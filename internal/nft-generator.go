@@ -72,7 +72,10 @@ func NFTGenerator(n int, l string, f string) {
 		for k, v := range h {
 			g[k] = m[k][v]
 		}
-		generator(g, f+"/"+strconv.Itoa(i)+".PNG")
+		err = generator(g, f+"/"+strconv.Itoa(i)+".PNG")
+		if err != nil {
+			return
+		}
 		meta := metaGenerator(m, h)
 		meta.Id = i
 		meta.Name = strconv.Itoa(i) + ".PNG"
@@ -85,7 +88,7 @@ func NFTGenerator(n int, l string, f string) {
 func metaGenerator(m [][]string, h []int) Metadata {
 	properties := []Property{}
 	for k, v := range h {
-		properties = append(properties, Property{v, strings.Split(strings.Split(m[k][v], "/")[1], "_")[1], strings.Split(strings.Split(m[k][v], "/")[2], ".")[0]})
+		properties = append(properties, Property{v, strings.Split(strings.Split(m[k][v], "/")[len(strings.Split(m[k][v], "/"))-2], "_")[1], strings.Split(strings.Split(m[k][v], "/")[len(strings.Split(m[k][v], "/"))-1], ".")[0]})
 	}
 
 	return Metadata{Hash: stringEncoder(h), Date: time.Now(), Properties: properties}
@@ -148,7 +151,7 @@ func isHashExists(metadata []Metadata, hash string) bool {
 	return false
 }
 
-func generator(images []string, output string) {
+func generator(images []string, output string) error {
 	var decodedImages = make([]image.Image, len(images))
 
 	for i, img := range images {
@@ -165,11 +168,14 @@ func generator(images []string, output string) {
 	result, err := os.Create(output)
 	if err != nil {
 		log.Fatalf("Failed to create: %s", err)
+		return err
 	}
 
 	jpeg.Encode(result, newImage, &jpeg.Options{Quality: jpeg.DefaultQuality})
 	defer result.Close()
 	log.Info("File created: ", output)
+
+	return nil
 }
 
 func openAndDecode(imgPath string) image.Image {
@@ -196,7 +202,7 @@ func readLayers(dir string) ([][]string, error) {
 	}
 
 	err := filepath.Walk(dir, func(path string, f os.FileInfo, err error) error {
-		if f.Name() != ".DS_Store" && f.Name() != strings.Split(dir, "/")[len(strings.Split(dir, "/"))-1] {
+		if f.Name() != ".DS_Store" && f.Name() != dir {
 			if !f.IsDir() {
 				layers = append(layers, path)
 			} else {
@@ -212,7 +218,7 @@ func readLayers(dir string) ([][]string, error) {
 
 	for _, v := range multiLayers {
 		for _, l := range v {
-			err := validateLayer(strings.Split(l, "/")[1])
+			err := validateLayer(strings.Split(l, "/")[len(strings.Split(l, "/"))-2])
 			if err != nil {
 				return nil, err
 			}
